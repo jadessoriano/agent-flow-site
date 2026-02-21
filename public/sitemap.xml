@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://agentflow.dev</loc><priority>1.0</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://agentflow.dev/download</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://agentflow.dev/docs</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://agentflow.dev/docs/installation</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://agentflow.dev/docs/configuration</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://agentflow.dev/docs/pipelines</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://agentflow.dev/docs/node-types</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://agentflow.dev/docs/agents</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://agentflow.dev/docs/execution</loc><priority>0.7</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://agentflow.dev/docs/cost-tracking</loc><priority>0.7</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://agentflow.dev/docs/keyboard-shortcuts</loc><priority>0.6</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://agentflow.dev/docs/best-practices</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://agentflow.dev/docs/api-reference</loc><priority>0.7</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://agentflow.dev/docs/example-pipeline</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
+</urlset>

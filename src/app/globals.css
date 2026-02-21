@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+@theme {
+  --color-zinc-925: #111113;
+  --color-brand: #6366f1;
+  --color-brand-light: #818cf8;
+  --color-brand-dark: #4f46e5;
+  --color-accent: #22d3ee;
+  --color-accent-light: #67e8f9;
+  --color-surface: #18181b;
+  --color-surface-light: #27272a;
+  --color-surface-lighter: #3f3f46;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #09090b;
+  color: #fafafa;
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #818cf8, #22d3ee);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, #6366f1, #22d3ee);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.glow {
+  box-shadow: 0 0 60px -12px rgba(99, 102, 241, 0.25);
+}
+
+.node-glow-blue {
+  box-shadow: 0 0 20px -4px rgba(99, 102, 241, 0.5);
+}
+
+.node-glow-cyan {
+  box-shadow: 0 0 20px -4px rgba(34, 211, 238, 0.5);
+}
+
+.node-glow-green {
+  box-shadow: 0 0 20px -4px rgba(34, 197, 94, 0.5);
+}
+
+.node-glow-amber {
+  box-shadow: 0 0 20px -4px rgba(245, 158, 11, 0.5);
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 6s ease-in-out 2s infinite;
+}
+
+.animate-float-slow {
+  animation: float 8s ease-in-out 1s infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+
+.canvas-grid {
+  background-size: 24px 24px;
+  background-image:
+    linear-gradient(to right, rgba(63, 63, 70, 0.3) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(63, 63, 70, 0.3) 1px, transparent 1px);
+}
+
+.edge-path {
+  stroke-dasharray: 8 4;
+  animation: dash 1.5s linear infinite;
+}
+
+@keyframes dash {
+  to { stroke-dashoffset: -12; }
+}
