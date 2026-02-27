@@ -17,7 +17,7 @@ export const metadata = {
 };
 
 const GITHUB_REPO = "https://github.com/jadessoriano/agent-flow";
-const LATEST_VERSION = "0.1.0";
+const LATEST_VERSION = "0.2.0-beta.1";
 const RELEASE_BASE = `${GITHUB_REPO}/releases/download/v${LATEST_VERSION}`;
 
 const platforms = [
@@ -118,7 +118,7 @@ export default function DownloadPage() {
         <div className="relative mx-auto max-w-4xl px-6 text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/50 px-4 py-1.5 text-sm text-zinc-400">
             <Download className="h-3.5 w-3.5 text-indigo-400" />
-            v0.1.0 — Pre-release
+            v0.2.0-beta.1
           </div>
 
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
@@ -219,7 +219,7 @@ npm run tauri build`}</code>
             </div>
 
             <p className="text-sm text-zinc-400">
-              Requires Rust 1.77.2+, Node.js 16+, and{" "}
+              Requires Rust 1.77.2+, Node.js 20+, and{" "}
               <Link
                 href="/docs/installation#system-deps"
                 className="text-indigo-400 underline"

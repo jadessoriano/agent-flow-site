@@ -32,7 +32,7 @@ export default function InstallationPage() {
             install: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh",
           },
           {
-            name: "Node.js 16+",
+            name: "Node.js 20+",
             desc: "Frontend build toolchain (npm included)",
             install: "nvm install --lts",
           },
@@ -83,8 +83,9 @@ export default function InstallationPage() {
       <CodeBlock language="bash">
         {`sudo apt update
 sudo apt install -y libwebkit2gtk-4.1-dev \\
-  build-essential curl wget file \\
-  libssl-dev libayatana-appindicator3-dev \\
+  libgtk-3-dev libjavascriptcoregtk-4.1-dev libsoup-3.0-dev \\
+  build-essential curl wget file patchelf \\
+  libssl-dev libappindicator3-dev \\
   librsvg2-dev`}
       </CodeBlock>
 

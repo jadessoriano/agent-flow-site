@@ -13,12 +13,20 @@ import {
   Lightbulb,
   BookOpen,
   HelpCircle,
+  Zap,
+  Github,
 } from "lucide-react";
 
 const sections = [
   {
     title: "Getting Started",
     items: [
+      {
+        href: "/docs/quickstart",
+        icon: Zap,
+        label: "Quickstart",
+        desc: "Get from zero to a running pipeline in 60 seconds",
+      },
       {
         href: "/docs/installation",
         icon: Download,
@@ -46,7 +54,7 @@ const sections = [
         href: "/docs/node-types",
         icon: Layers,
         label: "Node Types",
-        desc: "AI Task, Shell, Git, Parallel, Approval, Sub-pipeline",
+        desc: "AI Task, Shell, Git, Parallel, Loop, Approval, Sub-pipeline, Comment",
       },
       {
         href: "/docs/agents",
@@ -87,7 +95,7 @@ const sections = [
         href: "/docs/example-pipeline",
         icon: BookOpen,
         label: "Example Pipeline",
-        desc: "Full CI/CD example using all six node types with walkthrough",
+        desc: "Full CI/CD example using multiple node types with walkthrough",
       },
     ],
   },
@@ -105,6 +113,12 @@ const sections = [
         icon: HelpCircle,
         label: "FAQ",
         desc: "Licensing, data privacy, costs, and common questions",
+      },
+      {
+        href: "/docs/contributing",
+        icon: Github,
+        label: "Contributing",
+        desc: "Development setup, project structure, and PR guidelines",
       },
     ],
   },

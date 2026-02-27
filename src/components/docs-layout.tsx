@@ -21,15 +21,22 @@ import {
   Lightbulb,
   BookOpen,
   HelpCircle,
+  Search,
+  Zap,
+  Copy,
+  Check,
+  Link2,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { useState } from "react";
+import { APP_VERSION } from "@/lib/docs-meta";
 
 const navSections = [
   {
     title: "Getting Started",
     items: [
       { href: "/docs", label: "Overview", icon: Home },
+      { href: "/docs/quickstart", label: "Quickstart", icon: Zap },
       { href: "/docs/installation", label: "Installation", icon: Download },
       { href: "/docs/configuration", label: "Configuration", icon: Settings },
     ],
@@ -57,6 +64,7 @@ const navSections = [
     items: [
       { href: "/docs/api-reference", label: "API Reference", icon: Terminal },
       { href: "/docs/faq", label: "FAQ", icon: HelpCircle },
+      { href: "/docs/contributing", label: "Contributing", icon: Github },
     ],
   },
 ];
@@ -76,6 +84,27 @@ export function DocsNav() {
         <span className="ml-1 rounded-md bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-400">
           Docs
         </span>
+        <span className="rounded-md bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400">
+          v{APP_VERSION}
+        </span>
+      </div>
+
+      {/* Search trigger */}
+      <div className="px-3 pt-3">
+        <button
+          onClick={() => {
+            window.dispatchEvent(
+              new KeyboardEvent("keydown", { key: "k", ctrlKey: true })
+            );
+          }}
+          className="flex w-full items-center gap-2.5 rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-sm text-zinc-500 transition hover:border-zinc-700 hover:text-zinc-400"
+        >
+          <Search className="h-3.5 w-3.5" />
+          <span className="flex-1 text-left">Search docs...</span>
+          <kbd className="rounded border border-zinc-700 bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-500">
+            Ctrl+K
+          </kbd>
+        </button>
       </div>
 
       {/* Nav */}
@@ -187,20 +216,88 @@ export function CodeBlock({
   title?: string;
   language?: string;
 }) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(children).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
   return (
     <div className="my-4 overflow-hidden rounded-xl border border-zinc-800">
       {title && (
         <div className="flex items-center justify-between border-b border-zinc-800 bg-zinc-900/60 px-4 py-2">
           <span className="text-xs font-medium text-zinc-400">{title}</span>
-          {language && (
-            <span className="text-xs text-zinc-600">{language}</span>
-          )}
+          <div className="flex items-center gap-2">
+            {language && (
+              <span className="text-xs text-zinc-600">{language}</span>
+            )}
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-zinc-500 transition hover:bg-zinc-800 hover:text-zinc-300"
+              title="Copy to clipboard"
+            >
+              {copied ? (
+                <>
+                  <Check className="h-3 w-3 text-green-400" />
+                  <span className="text-green-400">Copied!</span>
+                </>
+              ) : (
+                <Copy className="h-3 w-3" />
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+      {!title && (
+        <div className="flex justify-end border-b border-zinc-800 bg-zinc-900/60 px-2 py-1">
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-zinc-500 transition hover:bg-zinc-800 hover:text-zinc-300"
+            title="Copy to clipboard"
+          >
+            {copied ? (
+              <>
+                <Check className="h-3 w-3 text-green-400" />
+                <span className="text-green-400">Copied!</span>
+              </>
+            ) : (
+              <Copy className="h-3 w-3" />
+            )}
+          </button>
         </div>
       )}
       <pre className="overflow-x-auto bg-zinc-950 p-4">
         <code className="text-sm leading-relaxed text-zinc-300">{children}</code>
       </pre>
     </div>
+  );
+}
+
+export function AnchorHeading({
+  level = 2,
+  id,
+  children,
+}: {
+  level?: 2 | 3;
+  id: string;
+  children: React.ReactNode;
+}) {
+  const Tag = level === 2 ? "h2" : "h3";
+  const sizeClass = level === 2 ? "text-2xl font-bold" : "text-xl font-semibold";
+
+  return (
+    <Tag id={id} className={`group relative mt-12 ${sizeClass}`}>
+      <a
+        href={`#${id}`}
+        className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 transition group-hover:opacity-100"
+      >
+        <Link2 className="h-4 w-4 text-zinc-500 hover:text-indigo-400" />
+      </a>
+      {children}
+    </Tag>
   );
 }
 

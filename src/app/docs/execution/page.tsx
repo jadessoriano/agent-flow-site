@@ -88,6 +88,7 @@ Tauri IPC → executor::start_run()
     │       │           ├── ai-task → spawn claude CLI
     │       │           ├── shell/git → spawn bash -c
     │       │           ├── parallel → tokio::spawn children
+    │       │           ├── loop → iterate items, spawn per-item
     │       │           ├── approval-gate → emit event, wait
     │       │           └── sub-pipeline → recursive call
     │       │
@@ -100,21 +101,53 @@ Tauri IPC → executor::start_run()
 Frontend: listens for events, updates canvas & log viewer`}
       </CodeBlock>
 
+      {/* Loop Execution */}
+      <h2 className="mt-12 text-2xl font-bold" id="loop-execution">
+        Loop Execution
+      </h2>
+      <p className="mt-3 text-zinc-400">
+        Loop nodes iterate over a list of items, executing their child nodes
+        once per item. Each iteration injects per-item variables.
+      </p>
+
+      <CodeBlock title="Loop execution flow" language="text">
+        {`1. Parse the instructions field into a list using the configured separator
+   (newline, comma, or custom string)
+2. Cap the list at max_iterations (default: 1000)
+3. For each item in the list:
+   a. Inject loop variables: $LOOP_ITEM, $LOOP_INDEX, $LOOP_COUNT
+   b. Execute all child nodes with the injected variables
+   c. Track per-iteration status and cost
+4. Loop succeeds only if ALL iterations succeed
+5. If any iteration fails, remaining iterations are skipped
+6. Costs from all iterations are aggregated into the loop node's total`}
+      </CodeBlock>
+
+      <InfoBox type="info" title="Performance">
+        Loop nodes use Arc-wrapped read-only data for child spawns, eliminating
+        deep-clone overhead. Results are processed in completion order via Tokio
+        JoinSet for maximum throughput.
+      </InfoBox>
+
       {/* Live Streaming */}
       <h2 className="mt-12 text-2xl font-bold" id="streaming">
         Live Log Streaming
       </h2>
       <p className="mt-3 text-zinc-400">
         During execution, stdout and stderr from each node are captured and
-        emitted as events to the frontend line-by-line.
+        buffered, then flushed as batched events every 50ms to minimize IPC
+        overhead.
       </p>
 
       <CodeBlock title="Event format" language="json">
-        {`// node-log event payload
+        {`// node-log-batch event payload (batched every 50ms)
 {
   "runId": "run-1708344567890",
   "nodeId": "node-2",
-  "line": "PASS src/utils.test.ts (2.34s)"
+  "lines": [
+    "PASS src/utils.test.ts (2.34s)",
+    "PASS src/lib.test.ts (1.12s)"
+  ]
 }
 
 // run-update event payload
@@ -131,8 +164,11 @@ Frontend: listens for events, updates canvas & log viewer`}
       </CodeBlock>
 
       <p className="mt-4 text-sm text-zinc-400">
-        The live log viewer in the UI shows streamed output in a monospace panel
-        with auto-scroll. Each node&apos;s output is tagged and can be filtered.
+        The live log viewer shows streamed output in a monospace panel. A
+        &quot;Latest&quot; button lets you jump directly to the most recent node
+        with results — expanding and highlighting it automatically. Only the
+        last 200 log lines per node are rendered, with an indicator for hidden
+        earlier lines.
       </p>
 
       {/* Cancellation */}
@@ -145,6 +181,7 @@ Frontend: listens for events, updates canvas & log viewer`}
         run/cancel) or the cancel button.
       </p>
       <ul className="mt-4 list-inside list-disc space-y-2 text-sm text-zinc-400">
+        <li>Cancellation is propagated via a <code className="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-300">tokio::sync::watch</code> channel for zero-cost event-driven signaling</li>
         <li>Active processes receive <strong>SIGTERM</strong> first</li>
         <li>If a process doesn&apos;t exit within the grace period, <strong>SIGKILL</strong> is sent</li>
         <li>All pending nodes are marked as <code className="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-300">cancelled</code></li>
@@ -256,6 +293,13 @@ Frontend: listens for events, updates canvas & log viewer`}
         </table>
       </div>
 
+      <h3 className="mt-8 text-lg font-semibold">Filtering</h3>
+      <p className="mt-2 text-sm text-zinc-400">
+        The run history panel supports filtering by pipeline name, status
+        (success, failed, cancelled), and date range. Filters persist across
+        sessions so you can quickly return to the runs you care about.
+      </p>
+
       {/* Approval Handling */}
       <h2 className="mt-12 text-2xl font-bold" id="approvals">
         Approval Handling
@@ -273,6 +317,58 @@ Frontend: listens for events, updates canvas & log viewer`}
         </li>
         <li>Execution continues (on approve) or fails (on reject)</li>
       </ol>
+
+      {/* Desktop Notifications */}
+      <h2 className="mt-12 text-2xl font-bold" id="notifications">
+        Desktop Notifications
+      </h2>
+      <p className="mt-3 text-zinc-400">
+        AgentFlow sends native OS notifications for key pipeline events, even
+        when the app is minimized or in the background.
+      </p>
+      <ul className="mt-4 list-inside list-disc space-y-2 text-sm text-zinc-400">
+        <li><strong className="text-zinc-200">Run completed:</strong> Notifies when a pipeline finishes successfully</li>
+        <li><strong className="text-zinc-200">Run failed:</strong> Alerts immediately when a node fails</li>
+        <li><strong className="text-zinc-200">Approval requested:</strong> Prompts you to review and approve/reject a gate</li>
+      </ul>
+
+      <InfoBox type="tip">
+        Notifications use the native OS notification system (Windows Toast,
+        macOS Notification Center, Linux libnotify). You can control permissions
+        through your OS settings.
+      </InfoBox>
+
+      {/* Run State Isolation */}
+      <h2 className="mt-12 text-2xl font-bold" id="run-isolation">
+        Run State Isolation
+      </h2>
+      <p className="mt-3 text-zinc-400">
+        Run results are scoped to their pipeline. Switching between pipelines
+        preserves each pipeline&apos;s run state independently — the canvas and
+        LiveLog only show results matching the currently selected pipeline.
+      </p>
+
+      {/* Expandable Node Output */}
+      <h2 className="mt-12 text-2xl font-bold" id="expandable-output">
+        Expandable Node Output
+      </h2>
+      <p className="mt-3 text-zinc-400">
+        During and after execution, each node on the canvas can be expanded to
+        show its full output inline. Click a completed node to toggle its output
+        panel, which displays the captured stdout/stderr with syntax
+        highlighting.
+      </p>
+
+      {/* Export Run Reports */}
+      <h2 className="mt-12 text-2xl font-bold" id="export-reports">
+        Export Run Reports
+      </h2>
+      <p className="mt-3 text-zinc-400">
+        Completed runs can be exported as JSON reports containing full run
+        metadata, per-node results, logs, timing, and cost breakdowns. Use
+        these for auditing, sharing with teammates, or feeding into external
+        dashboards.
+      </p>
     </div>
   );
 }

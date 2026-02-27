@@ -4,22 +4,27 @@ import { useState } from "react";
 import Link from "next/link";
 import { Download, Github, Menu, X } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { APP_VERSION } from "@/lib/docs-meta";
 
 const links = [
   { href: "#features", label: "Features" },
   { href: "#how-it-works", label: "How It Works" },
   { href: "/docs", label: "Docs" },
+  { href: "/changelog", label: "Changelog" },
 ];
 
-export function Navbar() {
+export function Navbar({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 z-50 w-full border-b border-zinc-800/50 bg-zinc-950/80 backdrop-blur-xl">
+    <nav className={`fixed top-0 z-50 w-full border-b border-zinc-800/50 bg-zinc-950/80 backdrop-blur-xl ${className || ""}`}>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2.5">
           <Logo />
           <span className="text-lg font-bold tracking-tight">AgentFlow</span>
+          <span className="rounded-md bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400">
+            v{APP_VERSION}
+          </span>
         </Link>
 
         {/* Desktop */}

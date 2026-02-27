@@ -71,6 +71,85 @@ List any found as: file:line - description"`}
           title="Use agents to reduce repetition"
           desc="If multiple AI nodes share system instructions, create an agent with the common context. This avoids repeating the same context in every node's instructions."
         />
+
+        <Tip
+          title="Set budget limits on expensive pipelines"
+          desc="Configure a max cost (USD) per run in Pipeline Settings. If accumulated AI task costs exceed the budget, execution halts automatically — preventing runaway costs during development."
+          example={`# In Pipeline Settings panel:
+Budget: $0.50
+
+# Pipeline halts if total AI cost exceeds $0.50
+# Remaining nodes are cancelled, not failed`}
+        />
+
+        <Tip
+          title="Use output caching for iterative runs"
+          desc="Output caching skips re-execution of nodes whose instructions haven't changed since the last successful run. This saves tokens when you're iterating on later steps of a pipeline."
+          example={`# First run: all nodes execute ($0.15)
+# You tweak node-5's instructions
+# Second run: nodes 1-4 are cached (free)
+#             node-5+ re-execute ($0.03)`}
+        />
+
+        <Tip
+          title="Pick the right model per node"
+          desc="Use per-node model selection to match capability to complexity. Haiku for simple formatting, Sonnet for general tasks, Opus for complex reasoning — optimizing cost at each step."
+          example={`# Expensive: all nodes use Opus
+Node 1 (Opus): "Format this JSON"        $0.02
+Node 2 (Opus): "Architect new module"     $0.08
+
+# Optimized: right model per task
+Node 1 (Haiku):  "Format this JSON"      $0.001
+Node 2 (Opus):   "Architect new module"   $0.08`}
+        />
+
+        <Tip
+          title="Use pre-run cost estimates"
+          desc="Before clicking Run, check the estimated cost based on historical averages. After 3-5 runs, estimates become reliable enough for budget planning."
+        />
+      </div>
+
+      {/* Loop Best Practices */}
+      <h2 className="mt-16 text-2xl font-bold" id="loops">
+        Using Loops Effectively
+      </h2>
+
+      <div className="mt-6 space-y-5">
+        <Tip
+          title="Set max_iterations to prevent runaway loops"
+          desc="Always configure max_iterations on loop nodes. Without a cap, a loop over a large list can consume significant time and cost."
+          example={`# Safe: capped at 50 iterations
+"loop_config": { "max_iterations": 50 }
+
+# Dangerous: no cap on a dynamic list
+"loop_config": {}  // could iterate thousands of times`}
+        />
+
+        <Tip
+          title="Use the right separator for your data"
+          desc='Choose the separator that matches your list format. Newline works for file lists, comma for CSV-style data, or set a custom separator for special cases.'
+          example={`# Newline-separated (default):
+"file1.ts\\nfile2.ts\\nfile3.ts"
+
+# Comma-separated:
+"item1, item2, item3"  →  separator: "comma"
+
+# Custom separator:
+"task1|task2|task3"    →  separator: "|"`}
+        />
+
+        <Tip
+          title="Reference loop variables in child instructions"
+          desc="Child nodes can use $LOOP_ITEM, $LOOP_INDEX, and $LOOP_COUNT to customize behavior per iteration."
+          example={`# Child AI Task instructions:
+"Review file $LOOP_ITEM (file $LOOP_INDEX of $LOOP_COUNT).
+Focus on security issues and suggest fixes."`}
+        />
+
+        <Tip
+          title="Monitor loop costs with pre-run estimates"
+          desc="Loop-aware cost estimation multiplies child AI Task costs by the iteration count. Check the estimate before running a loop over a large list."
+        />
       </div>
 
       {/* Pipeline Design */}
@@ -133,6 +212,26 @@ Lint (30s) → Test (30s) → Typecheck (30s)
         <Tip
           title="Compose with sub-pipelines"
           desc="Build reusable pipeline modules. A 'deploy' sub-pipeline can be called from both your 'full CI/CD' and 'hotfix' pipelines."
+        />
+
+        <Tip
+          title="Chain nodes with output data passing"
+          desc="Use {output.NODE_ID} to feed one node's output into another. This lets you build multi-step reasoning chains where each step builds on the previous result."
+          example={`# Node 1: "Analyze the codebase for tech debt"
+# → captures analysis report to stdout
+
+# Node 2: "Based on this report: {output.node-1}
+#           Create a prioritized remediation plan"
+# → receives Node 1's full output as context`}
+        />
+
+        <Tip
+          title="Use conditional edges for graceful failure handling"
+          desc='Add "failure" edges alongside "success" edges to create cleanup paths. Instead of letting the entire pipeline fail, route failures to rollback or notification nodes.'
+          example={`Deploy Node
+  ├── success → "Send Success Notification"
+  └── failure → "Rollback"
+                  └── "Send Failure Alert"`}
         />
       </div>
 
@@ -244,6 +343,16 @@ claude --agent code-reviewer --print "Review latest changes"`}
         <Tip
           title="Verify the Claude CLI path"
           desc="Most execution failures are caused by the Claude CLI not being found. Check Settings → Claude CLI Path and verify it points to the correct binary."
+        />
+
+        <Tip
+          title="Disable output caching when debugging"
+          desc="If a node's output seems stale, it might be serving a cached result. Tweak the node's instructions slightly (even adding a space) to invalidate the cache and force re-execution."
+        />
+
+        <Tip
+          title="Use the Latest button in long runs"
+          desc='During or after a pipeline run, click the "Latest" button in the log viewer to jump directly to the most recent node with results — it auto-expands and highlights it.'
         />
       </div>
 

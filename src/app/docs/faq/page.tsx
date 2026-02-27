@@ -7,7 +7,7 @@ const faqs = [
   },
   {
     q: "Does AgentFlow require an internet connection?",
-    a: "The desktop app itself runs fully offline. However, AI Task nodes call the Claude Code CLI, which requires internet access to reach the Anthropic API. Shell, Git, Parallel, Approval Gate, and Sub-pipeline nodes work completely offline.",
+    a: "The desktop app itself runs fully offline. However, AI Task nodes call the Claude Code CLI, which requires internet access to reach the Anthropic API. Shell, Git, Parallel, Loop, Approval Gate, and Sub-pipeline nodes work completely offline.",
   },
   {
     q: "Where is my data stored?",
@@ -64,6 +64,58 @@ const faqs = [
   {
     q: "How do I contribute?",
     a: "AgentFlow is open source on GitHub. Fork the repo, create a branch, make your changes, and submit a PR. The project uses Rust (backend) and React + TypeScript (frontend) with Tauri v2 as the bridge.",
+  },
+  {
+    q: "Does AgentFlow support light mode?",
+    a: "AgentFlow ships with a dark theme only, optimized for extended coding sessions. Light theme has been removed to provide a consistent, polished experience.",
+  },
+  {
+    q: "Can I set a budget limit on pipeline runs?",
+    a: "Yes. In the Pipeline Settings panel, you can set a maximum cost (USD) per run. When accumulated AI task costs exceed the budget, execution halts automatically and remaining nodes are cancelled. This prevents runaway costs during development.",
+  },
+  {
+    q: "What is output caching?",
+    a: "Output caching skips re-execution of nodes whose instructions haven't changed since their last successful run. AgentFlow compares SHA-256 instruction hashes and reuses cached results, saving both time and API tokens during iterative pipeline development.",
+  },
+  {
+    q: "Can nodes pass data to each other?",
+    a: "Yes. Use the {output.NODE_ID} syntax in downstream node instructions to reference the captured stdout of an upstream node. The placeholder is replaced at runtime with the full output from the referenced node's execution.",
+  },
+  {
+    q: "Can I choose different Claude models per node?",
+    a: "Yes. Each AI Task node can be configured with a specific model — Opus for complex reasoning, Sonnet for balanced tasks, or Haiku for fast lightweight operations. This lets you optimize cost vs. capability per pipeline step.",
+  },
+  {
+    q: "How do desktop notifications work?",
+    a: "AgentFlow uses native OS notifications (Windows Toast, macOS Notification Center, Linux libnotify) to alert you when pipeline runs complete, fail, or hit an approval gate. Notifications work even when the app is minimized. You can enable or disable them in settings.",
+  },
+  {
+    q: "What are secret variables?",
+    a: "Secret variables are pipeline variables marked as sensitive. Their values are masked in the UI (shown as dots), excluded from log output, and never written to the pipeline JSON file. Use them for API keys, tokens, and other credentials that your pipeline nodes need at runtime.",
+  },
+  {
+    q: "Are there starter templates?",
+    a: "Yes. AgentFlow ships with 8 built-in pipeline templates: Code Review, Bug Fix, CI/CD, Ticket-to-PR, Release, Add a Feature, Generate API Docs, and Refactor Module. Templates provide one-click scaffolding — they create the pipeline with pre-configured nodes and edges that you can customize.",
+  },
+  {
+    q: "Does AgentFlow auto-update?",
+    a: "Yes. AgentFlow includes a built-in auto-updater with signed builds. When a new version is available, the app shows an update banner and you can update with a single click. Updates are downloaded in the background and applied on restart.",
+  },
+  {
+    q: "What is the Loop node?",
+    a: "The Loop node iterates over a list of items, executing its child nodes for each item. You configure a separator (newline, comma, or custom), set a max iteration cap (1-1000), and child nodes receive per-item variables: $LOOP_ITEM, $LOOP_INDEX, and $LOOP_COUNT. Great for batch operations like reviewing multiple files or processing a list of tasks.",
+  },
+  {
+    q: "What are Simple and Advanced experience modes?",
+    a: "Simple mode shows only essential features — ideal for getting started or building linear pipelines. Advanced mode unlocks all features including Parallel nodes, Loop nodes, per-node model selection, and advanced configuration. You can switch between modes anytime in Settings.",
+  },
+  {
+    q: "Is there a setup wizard for first-time users?",
+    a: "Yes. When you first launch AgentFlow, a setup wizard guides you through selecting your project directory, detecting the Claude CLI, and choosing your experience mode. A hint overlay then highlights key UI areas to help you get oriented.",
+  },
+  {
+    q: "What is the compact view toggle?",
+    a: "The canvas supports both compact and detailed views. Compact view shows nodes as just an icon and name — useful for large pipelines where you need an overview. Detailed view shows full node information. Toggle between them with the view button on the canvas toolbar.",
   },
 ];
 

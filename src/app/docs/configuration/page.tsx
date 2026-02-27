@@ -40,7 +40,19 @@ export default function ConfigurationPage() {
             name: "theme",
             type: "string",
             description:
-              'UI theme. Currently only "dark" is supported.',
+              '"dark" — the only supported theme. Light theme has been removed.',
+          },
+          {
+            name: "experience_mode",
+            type: "string",
+            description:
+              '"simple" for essential features only, or "advanced" for the full feature set including parallel, loops, and advanced configuration.',
+          },
+          {
+            name: "notifications",
+            type: "boolean",
+            description:
+              "Enable/disable desktop notifications for pipeline events.",
           },
         ]}
       />
@@ -48,9 +60,65 @@ export default function ConfigurationPage() {
       <CodeBlock title="Default settings.json" language="json">
         {`{
   "claude_cli_path": null,
-  "theme": "dark"
+  "theme": "dark",
+  "experience_mode": "simple",
+  "notifications": true
 }`}
       </CodeBlock>
+
+      {/* Setup Wizard */}
+      <h2 className="mt-12 text-2xl font-bold" id="setup-wizard">
+        Setup Wizard
+      </h2>
+      <p className="mt-3 text-zinc-400">
+        When you launch AgentFlow for the first time (or when no project is
+        configured), a setup wizard guides you through initial configuration:
+      </p>
+      <ol className="mt-4 list-inside list-decimal space-y-2 text-sm text-zinc-400">
+        <li>Select your project directory (git repository)</li>
+        <li>Auto-detect and verify the Claude CLI installation</li>
+        <li>Choose your experience mode (Simple or Advanced)</li>
+        <li>Create the <code className="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-300">.claude/</code> directory structure if it doesn&apos;t exist</li>
+      </ol>
+
+      <InfoBox type="tip">
+        After completing the wizard, a hint overlay highlights key UI areas to
+        help you get started quickly. You can dismiss it at any time.
+      </InfoBox>
+
+      {/* Experience Modes */}
+      <h2 className="mt-12 text-2xl font-bold" id="experience-modes">
+        Experience Modes
+      </h2>
+      <p className="mt-3 text-zinc-400">
+        AgentFlow offers two experience modes to match your comfort level:
+      </p>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-5">
+          <h3 className="font-semibold text-zinc-200">Simple Mode</h3>
+          <p className="mt-2 text-sm text-zinc-400">
+            Essential features only. Hides advanced node types (Parallel, Loop)
+            and complex configuration options. Ideal for getting started or for
+            straightforward linear pipelines.
+          </p>
+        </div>
+        <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-5">
+          <h3 className="font-semibold text-zinc-200">Advanced Mode</h3>
+          <p className="mt-2 text-sm text-zinc-400">
+            Full feature set including Parallel nodes, Loop nodes, advanced
+            retry/timeout configuration, per-node model selection, and all
+            pipeline settings. For power users building complex workflows.
+          </p>
+        </div>
+      </div>
+
+      <InfoBox type="info">
+        You can switch between modes at any time in{" "}
+        <strong>Settings &rarr; Experience Mode</strong>. Pipelines created in
+        Advanced mode can still be run in Simple mode — the mode only affects
+        which UI options are visible.
+      </InfoBox>
 
       {/* CLI Detection */}
       <h2 className="mt-12 text-2xl font-bold" id="cli-detection">

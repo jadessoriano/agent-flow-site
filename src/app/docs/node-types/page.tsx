@@ -2,7 +2,7 @@ import { Breadcrumb, CodeBlock, InfoBox, PropTable } from "@/components/docs-lay
 
 export const metadata = {
   title: "Node Types",
-  description: "All six AgentFlow node types: AI Task, Shell, Git, Parallel, Approval Gate, and Sub-pipeline with configuration details.",
+  description: "All eight AgentFlow node types: AI Task, Shell, Git, Parallel, Loop, Approval Gate, Sub-pipeline, and Comment with configuration details.",
 };
 
 export default function NodeTypesPage() {
@@ -12,9 +12,9 @@ export default function NodeTypesPage() {
 
       <h1 className="text-3xl font-bold tracking-tight">Node Types</h1>
       <p className="mt-4 text-lg text-zinc-400">
-        AgentFlow provides six node types that can be combined to build any
+        AgentFlow provides eight node types that can be combined to build any
         workflow — from simple automation to complex multi-stage pipelines with
-        human oversight.
+        loops, human oversight, and more.
       </p>
 
       {/* AI Task */}
@@ -29,8 +29,9 @@ export default function NodeTypesPage() {
 
       <PropTable
         items={[
-          { name: "instructions", type: "string", required: true, description: "The prompt sent to Claude. Supports variable substitution." },
+          { name: "instructions", type: "string", required: true, description: "The prompt sent to Claude. Supports variable substitution and {output.NODE_ID} references." },
           { name: "agent", type: "string", description: "Agent name referencing .claude/agents/{name}.md for system instructions." },
+          { name: "model", type: "string", description: 'Claude model override for this node: "opus", "sonnet", or "haiku". Defaults to pipeline/global setting.' },
           { name: "requires_tools", type: "string[]", description: "MCP tools that must be available for this task." },
           { name: "retry", type: "{ max, delay }", description: "Retry policy for failed invocations." },
           { name: "timeout", type: "number", description: "Max execution time in seconds." },
@@ -51,7 +52,8 @@ claude --print "Generate unit tests for src/utils.ts"
       <InfoBox type="info">
         AI Task is the only node type that incurs token costs. Costs are
         automatically parsed from the Claude CLI output and stored in the
-        database for tracking.
+        database for tracking. Output caching can skip re-execution if the
+        node&apos;s instructions haven&apos;t changed since the last successful run.
       </InfoBox>
 
       {/* Shell Command */}
@@ -130,11 +132,12 @@ git merge origin/main --no-edit`}
       />
 
       <CodeBlock title="Behavior" language="text">
-        {`1. All child nodes are spawned concurrently via tokio::spawn
-2. Execution blocks until ALL children complete
-3. Status = "success" only if ALL children succeed
-4. Status = "failed" if ANY child fails
-5. Individual child status is tracked separately`}
+        {`1. All child nodes are spawned concurrently via tokio::task::JoinSet
+2. Results are processed in completion order (not spawn order)
+3. Execution blocks until ALL children complete
+4. Status = "success" only if ALL children succeed
+5. Status = "failed" if ANY child fails
+6. Individual child status is tracked separately`}
       </CodeBlock>
 
       <CodeBlock title="Example: parallel testing" language="json">
@@ -149,6 +152,78 @@ git merge origin/main --no-edit`}
   "position": { "x": 250, "y": 150 }
 }`}
       </CodeBlock>
+
+      {/* Loop */}
+      <h2 className="mt-12 text-2xl font-bold" id="loop">
+        <span className="mr-2 inline-block h-3 w-3 rounded-full bg-pink-500" />
+        Loop
+      </h2>
+      <p className="mt-3 text-zinc-400">
+        Iterates over a list of items, executing child steps for each one.
+        Supports configurable separators (newline, comma, custom), max iteration
+        caps, and injects per-item variables into child node instructions.
+      </p>
+
+      <PropTable
+        items={[
+          { name: "instructions", type: "string", required: true, description: "The list of items to iterate over, or an expression that produces a list." },
+          { name: "children", type: "string[]", required: true, description: "Array of child node IDs to execute for each loop item." },
+          { name: "loop_config", type: "LoopConfig", description: "Configuration for loop behavior (separator, max iterations, timeout, model)." },
+          { name: "retry", type: "{ max, delay }", description: "Retry policy for the entire loop." },
+          { name: "timeout", type: "number", description: "Max execution time for the entire loop." },
+        ]}
+      />
+
+      <CodeBlock title="Loop configuration" language="json">
+        {`{
+  "loop_config": {
+    "separator": "newline",   // "newline" | "comma" | custom string
+    "max_iterations": 100,    // Cap iterations (1-1000)
+    "timeout": 600,           // Per-loop timeout in seconds
+    "model": "sonnet"         // Model override for AI children
+  }
+}`}
+      </CodeBlock>
+
+      <CodeBlock title="Loop variables injected per iteration" language="text">
+        {`$LOOP_ITEM   — The current item from the list
+$LOOP_INDEX  — Zero-based index of the current iteration
+$LOOP_COUNT  — Total number of items in the list
+
+# Example: if instructions = "file1.ts\\nfile2.ts\\nfile3.ts"
+# Iteration 0: $LOOP_ITEM="file1.ts", $LOOP_INDEX=0, $LOOP_COUNT=3
+# Iteration 1: $LOOP_ITEM="file2.ts", $LOOP_INDEX=1, $LOOP_COUNT=3
+# Iteration 2: $LOOP_ITEM="file3.ts", $LOOP_INDEX=2, $LOOP_COUNT=3`}
+      </CodeBlock>
+
+      <CodeBlock title="Example: review each changed file" language="json">
+        {`{
+  "id": "node-loop",
+  "name": "Review Each File",
+  "type": "loop",
+  "instructions": "src/auth.ts\\nsrc/api.ts\\nsrc/db.ts",
+  "children": ["node-review"],
+  "loop_config": {
+    "separator": "newline",
+    "max_iterations": 50
+  },
+  "inputs": [],
+  "outputs": [],
+  "position": { "x": 250, "y": 150 }
+}`}
+      </CodeBlock>
+
+      <InfoBox type="tip" title="Loop-aware cost estimation">
+        Pre-run cost estimates account for loop iterations — the estimated cost
+        of child AI Task nodes is multiplied by the expected iteration count.
+        Set <code>max_iterations</code> to cap both runtime and estimated cost.
+      </InfoBox>
+
+      <InfoBox type="info">
+        Loop nodes use Arc-wrapped read-only data for parallel child spawns,
+        eliminating deep-clone overhead. Results are processed in completion
+        order via Tokio JoinSet for maximum throughput.
+      </InfoBox>
 
       {/* Approval Gate */}
       <h2 className="mt-12 text-2xl font-bold" id="approval-gate">
@@ -229,6 +304,41 @@ git merge origin/main --no-edit`}
         set. The referenced pipeline must exist at execution time. Circular
         references (A calls B which calls A) are caught and result in a
         validation error.
+      </InfoBox>
+
+      {/* Comment */}
+      <h2 className="mt-12 text-2xl font-bold" id="comment">
+        <span className="mr-2 inline-block h-3 w-3 rounded-full bg-zinc-500" />
+        Comment
+      </h2>
+      <p className="mt-3 text-zinc-400">
+        A non-executing annotation node for documenting pipeline sections,
+        leaving notes for teammates, and organizing complex workflows visually.
+        Comment nodes are completely ignored during execution.
+      </p>
+
+      <PropTable
+        items={[
+          { name: "instructions", type: "string", required: true, description: "The comment text displayed on the canvas." },
+        ]}
+      />
+
+      <CodeBlock title="Example" language="json">
+        {`{
+  "id": "node-comment-1",
+  "name": "Deployment Notes",
+  "type": "comment",
+  "instructions": "This section handles the staging deployment. Requires VPN access and valid AWS credentials.",
+  "inputs": [],
+  "outputs": [],
+  "position": { "x": 50, "y": 600 }
+}`}
+      </CodeBlock>
+
+      <InfoBox type="info">
+        Comment nodes have no edges, no execution logic, and no cost. They exist
+        purely for documentation on the canvas. Use them to annotate complex
+        pipeline sections or leave notes for your team.
       </InfoBox>
 
       {/* Common Properties */}

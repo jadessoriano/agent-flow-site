@@ -32,6 +32,11 @@ export default function KeyboardShortcutsPage() {
             action: "Run / Cancel pipeline",
             desc: "Starts the current pipeline. If a run is active, cancels it instead.",
           },
+          {
+            keys: ["Ctrl", "S"],
+            action: "Save pipeline",
+            desc: "Saves the current pipeline to disk.",
+          },
         ]}
       />
 
@@ -68,7 +73,7 @@ export default function KeyboardShortcutsPage() {
           {
             keys: ["Ctrl", "Z"],
             action: "Undo",
-            desc: "Reverts the last node/edge change. Up to 30 steps of history.",
+            desc: "Reverts the last change including node edits, drag moves, and auto-layout. Up to 30 snapshots.",
           },
           {
             keys: ["Ctrl", "Shift", "Z"],
@@ -84,6 +89,16 @@ export default function KeyboardShortcutsPage() {
             keys: ["Delete"],
             action: "Delete node",
             desc: "Deletes the currently selected node. Also works with Backspace.",
+          },
+          {
+            keys: ["Ctrl", "C"],
+            action: "Copy node",
+            desc: "Copies the currently selected node to the clipboard.",
+          },
+          {
+            keys: ["Ctrl", "V"],
+            action: "Paste node",
+            desc: "Pastes the copied node onto the canvas at the cursor position.",
           },
         ]}
       />
@@ -127,6 +142,7 @@ export default function KeyboardShortcutsPage() {
               ["Drag from node handle", "Create a new edge connection"],
               ["Drag node palette item", "Add a new node to the canvas"],
               ["Double-click node", "Open node configuration panel"],
+              ["Hover node", "Focus mode — dims non-connected nodes and edges with smooth transitions"],
             ].map(([action, effect]) => (
               <tr key={action} className="border-b border-zinc-800/50">
                 <td className="px-4 py-2.5 font-medium text-zinc-200">{action}</td>
@@ -152,7 +168,8 @@ export default function KeyboardShortcutsPage() {
           toggles between run and cancel — no need for separate shortcuts.
         </li>
         <li>
-          Undo history holds up to <strong>30 states</strong>. Making a new
+          Undo history holds up to <strong>30 snapshots</strong> covering node
+          edits, drag moves, and auto-layout rearrangements. Making a new
           change after undoing clears the redo stack.
         </li>
         <li>

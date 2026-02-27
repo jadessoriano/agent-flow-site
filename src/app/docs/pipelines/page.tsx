@@ -41,6 +41,7 @@ export default function PipelinesPage() {
           { name: "description", type: "string", required: true, description: "One-line summary of what this pipeline does." },
           { name: "version", type: "string", required: true, description: 'Semantic version string, e.g. "1.0.0".' },
           { name: "variables", type: "Record<string, string>", required: true, description: "Key-value pairs for runtime variable substitution." },
+          { name: "budget", type: "number", description: "Maximum cost (USD) per run. Execution halts when exceeded." },
           { name: "nodes", type: "PipelineNode[]", required: true, description: "Array of pipeline nodes (see Node Schema below)." },
           { name: "edges", type: "PipelineEdge[]", required: true, description: "Array of connections between nodes." },
         ]}
@@ -113,15 +114,17 @@ export default function PipelinesPage() {
         items={[
           { name: "id", type: "string", required: true, description: 'Unique node identifier, e.g. "node-1".' },
           { name: "name", type: "string", required: true, description: "Display name shown on the canvas." },
-          { name: "type", type: "string", required: true, description: '"ai-task" | "shell" | "git" | "parallel" | "approval-gate" | "sub-pipeline"' },
+          { name: "type", type: "string", required: true, description: '"ai-task" | "shell" | "git" | "parallel" | "loop" | "approval-gate" | "sub-pipeline" | "comment"' },
           { name: "instructions", type: "string", required: true, description: "The command, prompt, or instructions for this node." },
           { name: "agent", type: "string", description: "Agent name for ai-task nodes. References .claude/agents/{name}.md." },
+          { name: "model", type: "string", description: 'Claude model override: "opus", "sonnet", or "haiku". AI task nodes only.' },
           { name: "inputs", type: "string[]", required: true, description: "Input variable names consumed by this node." },
           { name: "outputs", type: "string[]", required: true, description: "Output variable names produced by this node." },
           { name: "retry", type: "{ max: number, delay: number }", description: "Retry policy. max = attempts, delay = seconds between retries." },
           { name: "timeout", type: "number", description: "Execution timeout in seconds. Process is killed if exceeded." },
-          { name: "children", type: "string[]", description: "Child node IDs. Required for parallel nodes." },
+          { name: "children", type: "string[]", description: "Child node IDs. Required for parallel and loop nodes." },
           { name: "pipeline_ref", type: "string", description: "Referenced pipeline name. Required for sub-pipeline nodes." },
+          { name: "loop_config", type: "LoopConfig", description: "Loop configuration: separator, max_iterations, timeout, model. Required for loop nodes." },
           { name: "requires_tools", type: "string[]", description: "MCP tool names required for ai-task nodes." },
           { name: "position", type: "{ x: number, y: number }", required: true, description: "Canvas coordinates for the node." },
         ]}
@@ -175,6 +178,58 @@ export default function PipelinesPage() {
         override them at runtime.
       </InfoBox>
 
+      {/* Node Output Passing */}
+      <h2 className="mt-12 text-2xl font-bold" id="output-passing">
+        Node Output Passing
+      </h2>
+      <p className="mt-3 text-zinc-400">
+        Downstream nodes can reference the output of upstream nodes using the{" "}
+        <code className="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-300">
+          {"{output.NODE_ID}"}
+        </code>{" "}
+        syntax in their instructions.
+      </p>
+
+      <CodeBlock title="Output reference syntax" language="text">
+        {`# Reference the output of a previous node by its ID:
+"Summarize the following report: {output.node-1}"
+
+# The placeholder is replaced at runtime with the full
+# stdout captured from the referenced node's execution.`}
+      </CodeBlock>
+
+      <InfoBox type="tip">
+        Output passing only works for nodes that have already completed
+        successfully. If the referenced node was skipped or failed, the
+        placeholder is replaced with an empty string.
+      </InfoBox>
+
+      {/* Pipeline-Agent Namespace */}
+      <h2 className="mt-12 text-2xl font-bold" id="agent-namespace">
+        Pipeline-Agent Namespace
+      </h2>
+      <p className="mt-3 text-zinc-400">
+        When generating pipelines with AI, AgentFlow auto-creates agent
+        Markdown files with a special prefix to avoid collisions with your
+        existing agents.
+      </p>
+
+      <CodeBlock title="Naming convention" language="text">
+        {`# Auto-generated agents use the _pipeline-- prefix:
+.claude/agents/_pipeline--code-reviewer.md
+.claude/agents/_pipeline--security-scanner.md
+
+# Your hand-written agents are unaffected:
+.claude/agents/code-reviewer.md
+.claude/agents/my-custom-agent.md`}
+      </CodeBlock>
+
+      <InfoBox type="info">
+        The <code>_pipeline--</code> prefix signals that the agent was
+        auto-generated. You can edit these files freely — they won&apos;t be
+        overwritten unless you regenerate the pipeline.
+      </InfoBox>
+
       {/* Validation */}
       <h2 className="mt-12 text-2xl font-bold" id="validation">
         Validation Rules
@@ -200,6 +255,16 @@ export default function PipelinesPage() {
           <strong className="text-zinc-200">Edge integrity:</strong> All edge{" "}
           <code className="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-300">from</code> and{" "}
           <code className="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-300">to</code> fields must reference existing node IDs.
+        </li>
+        <li>
+          <strong className="text-zinc-200">Cycle detection:</strong> The DAG is
+          checked for cycles before execution. Pipelines with circular node
+          dependencies are rejected.
+        </li>
+        <li>
+          <strong className="text-zinc-200">Self-reference protection:</strong>{" "}
+          Sub-pipeline nodes cannot reference the pipeline they belong to,
+          preventing infinite recursion.
         </li>
       </ul>
 
@@ -230,6 +295,30 @@ export default function PipelinesPage() {
         Generated pipelines include auto-created agent markdown files in{" "}
         <code>.claude/agents/</code> with names prefixed by{" "}
         <code>_pipeline--</code>.
+      </InfoBox>
+
+      {/* Atomic Pipeline Rename */}
+      <h2 className="mt-12 text-2xl font-bold" id="rename">
+        Atomic Pipeline Rename
+      </h2>
+      <p className="mt-3 text-zinc-400">
+        Renaming a pipeline updates both the display name and the filename in a
+        single atomic operation.
+      </p>
+
+      <CodeBlock title="Rename behavior" language="text">
+        {`1. User edits the pipeline name in the header
+2. AgentFlow sanitizes the new name (lowercase, spaces → hyphens)
+3. The .pipeline.json file is renamed on disk
+4. The file watcher detects the change and updates the sidebar
+5. All sub-pipeline references to the old name are NOT auto-updated
+   (you must update them manually)`}
+      </CodeBlock>
+
+      <InfoBox type="warning" title="Sub-pipeline references">
+        If other pipelines reference this one via sub-pipeline nodes, you must
+        manually update their <code>pipeline_ref</code> values after renaming.
+        AgentFlow does not auto-update cross-pipeline references.
       </InfoBox>
     </div>
   );

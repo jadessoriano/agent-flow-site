@@ -13,7 +13,7 @@ import {
 
 export const metadata = {
   title: "Example Pipeline",
-  description: "Complete CI/CD pipeline example using all six node types with step-by-step walkthrough, full JSON, and cost breakdown.",
+  description: "Complete CI/CD pipeline example using multiple node types with step-by-step walkthrough, full JSON, and cost breakdown.",
 };
 
 export default function ExamplePipelinePage() {
@@ -25,10 +25,10 @@ export default function ExamplePipelinePage() {
         Example: Full CI/CD Pipeline
       </h1>
       <p className="mt-4 text-lg text-zinc-400">
-        A practical, end-to-end example using all six node types. This pipeline
+        A practical, end-to-end example using multiple node types. This pipeline
         performs AI code review, runs quality checks in parallel, requires human
         approval, and then deploys — with a reusable sub-pipeline for the
-        deployment step.
+        deployment step. See the <a href="/docs/node-types" className="text-indigo-400 hover:text-indigo-300">Node Types</a> page for the full list of 8 available types including Loop.
       </p>
 
       {/* Visual overview */}
@@ -126,8 +126,9 @@ export default function ExamplePipelinePage() {
         <h4 className="mt-4 text-sm font-semibold text-zinc-300">What it does:</h4>
         <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-zinc-400">
           <li>Sends all git diff output to Claude with the code-reviewer agent</li>
+          <li>Uses <strong>Sonnet</strong> model — good balance of quality and cost for code review</li>
           <li>Claude analyzes for bugs, security issues, and code quality</li>
-          <li>Output is captured in the run log for review</li>
+          <li>Output is captured and available to downstream nodes via <code className="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-300">{"{output.node-1}"}</code></li>
           <li>Cost is tracked (typically $0.01-0.05 depending on diff size)</li>
         </ul>
         <CodeBlock title="Node configuration" language="json">
@@ -136,6 +137,7 @@ export default function ExamplePipelinePage() {
   "name": "AI Code Review",
   "type": "ai-task",
   "agent": "code-reviewer",
+  "model": "sonnet",
   "instructions": "Review all staged changes in this repository. Focus on bugs, security vulnerabilities, and code quality issues. Report findings grouped by severity.",
   "retry": { "max": 2, "delay": 10 },
   "timeout": 600,
@@ -405,16 +407,18 @@ For each: file:line - description - suggested fix.`}
           icon={<Cpu className="h-5 w-5 text-indigo-400" />}
         />
         <p className="mt-3 text-zinc-400">
-          After deployment, uses Claude to verify the staging environment is
-          healthy — checking API endpoints, checking logs for errors, and
-          confirming the new code is live.
+          After deployment, uses Claude (<strong>Haiku</strong> for speed and low cost) to verify the
+          staging environment is healthy. References the code review output
+          from node 1 via <code className="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-300">{"{output.node-1}"}</code>{" "}
+          to check if flagged issues are resolved.
         </p>
         <CodeBlock title="Node configuration" language="json">
           {`{
   "id": "node-6",
   "name": "Post-Deploy Verification",
   "type": "ai-task",
-  "instructions": "The staging deployment just completed. Verify the deployment by:\\n1. Checking the health endpoint at \${STAGING_URL}/health\\n2. Running a quick smoke test of the main user flows\\n3. Checking application logs for any new errors\\n\\nReport pass/fail with details.",
+  "model": "haiku",
+  "instructions": "The staging deployment just completed. The code review found: {output.node-1}\\n\\nVerify the deployment by:\\n1. Checking the health endpoint at \${STAGING_URL}/health\\n2. Running a quick smoke test of the main user flows\\n3. Checking application logs for any new errors\\n\\nReport pass/fail with details.",
   "timeout": 300,
   "inputs": [],
   "outputs": ["verification_report"],
@@ -439,6 +443,7 @@ For each: file:line - description - suggested fix.`}
   "name": "Full CI/CD",
   "description": "AI code review, parallel quality checks, approval gate, and staged deployment",
   "version": "1.0.0",
+  "budget": 0.50,
   "variables": {
     "BRANCH": "feature/my-changes",
     "DEPLOY_ENV": "staging",
@@ -450,6 +455,7 @@ For each: file:line - description - suggested fix.`}
       "name": "AI Code Review",
       "type": "ai-task",
       "agent": "code-reviewer",
+      "model": "sonnet",
       "instructions": "Review all staged changes. Focus on bugs, security, and code quality.",
       "retry": { "max": 2, "delay": 10 },
       "timeout": 600,
@@ -533,7 +539,8 @@ For each: file:line - description - suggested fix.`}
       "id": "node-6",
       "name": "Post-Deploy Verification",
       "type": "ai-task",
-      "instructions": "Verify staging deployment at \${STAGING_URL}. Check health, smoke test, and logs.",
+      "model": "haiku",
+      "instructions": "Review findings: {output.node-1}. Verify staging at \${STAGING_URL}. Check health, smoke test, and logs.",
       "timeout": 300,
       "inputs": [],
       "outputs": ["verification_report"],
@@ -569,14 +576,14 @@ For each: file:line - description - suggested fix.`}
           </thead>
           <tbody className="text-zinc-400">
             {[
-              ["AI Code Review", "ai-task", "$0.02 - $0.08"],
+              ["AI Code Review (Sonnet)", "ai-task", "$0.02 - $0.08"],
               ["Run Tests", "shell", "Free"],
               ["Lint & Type Check", "shell", "Free"],
               ["AI Security Scan", "ai-task", "$0.01 - $0.05"],
               ["Commit Changes", "git", "Free"],
               ["Deploy Approval", "approval-gate", "Free"],
               ["Deploy (sub-pipeline)", "sub-pipeline", "Free (shell only)"],
-              ["Post-Deploy Verification", "ai-task", "$0.01 - $0.03"],
+              ["Post-Deploy Verify (Haiku)", "ai-task", "$0.001 - $0.01"],
             ].map(([node, type, cost]) => (
               <tr key={node} className="border-b border-zinc-800/50">
                 <td className="px-4 py-2.5">{node}</td>
@@ -595,18 +602,25 @@ For each: file:line - description - suggested fix.`}
                 Total per run
               </td>
               <td className="px-4 py-2.5 text-right font-bold text-indigo-400">
-                ~$0.04 - $0.16
+                ~$0.03 - $0.14
               </td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <InfoBox type="tip" title="Cost savings with resume">
+      <InfoBox type="info" title="Budget limit">
+        This pipeline sets <code>budget: 0.50</code> — if accumulated AI costs
+        exceed $0.50, execution halts automatically and remaining nodes are
+        cancelled.
+      </InfoBox>
+
+      <InfoBox type="tip" title="Cost savings with resume &amp; caching">
         If this pipeline fails at step 4 (rejected) and you re-run it after
         making changes, the resume feature skips the AI Code Review and AI
         Security Scan if the code hasn&apos;t changed — saving the bulk of the
-        cost.
+        cost. Output caching further reduces cost on iterative runs where
+        instructions haven&apos;t changed.
       </InfoBox>
 
       {/* Failure scenarios */}
@@ -702,8 +716,10 @@ function TypeBadge({ type }: { type: string }) {
     shell: "bg-cyan-500/10 text-cyan-400",
     git: "bg-orange-500/10 text-orange-400",
     parallel: "bg-green-500/10 text-green-400",
+    loop: "bg-pink-500/10 text-pink-400",
     "approval-gate": "bg-amber-500/10 text-amber-400",
     "sub-pipeline": "bg-violet-500/10 text-violet-400",
+    comment: "bg-zinc-500/10 text-zinc-400",
   };
 
   return (

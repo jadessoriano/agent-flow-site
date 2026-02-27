@@ -38,9 +38,10 @@ export default function CostTrackingPage() {
       </CodeBlock>
 
       <InfoBox type="info">
-        Shell, Git, Parallel, Approval Gate, and Sub-pipeline nodes do not have
-        direct costs. Sub-pipeline costs are the sum of all AI Task nodes
-        within the sub-pipeline.
+        Shell, Git, Parallel, Loop, Approval Gate, and Sub-pipeline nodes do
+        not have direct costs. Sub-pipeline and Loop costs are the sum of all
+        AI Task nodes within them. Loop costs are multiplied by the number of
+        iterations.
       </InfoBox>
 
       {/* Metrics */}
@@ -128,6 +129,86 @@ export default function CostTrackingPage() {
           <strong className="text-zinc-200">Top pipelines:</strong> The 10 most expensive pipelines by
           cumulative cost
         </li>
+      </ul>
+
+      {/* Budget Limits */}
+      <h2 className="mt-12 text-2xl font-bold" id="budget">
+        Budget Limits
+      </h2>
+      <p className="mt-3 text-zinc-400">
+        Set a maximum cost per pipeline run. When the accumulated cost exceeds
+        the budget, execution halts automatically — no more nodes are started.
+      </p>
+      <ul className="mt-4 list-inside list-disc space-y-2 text-sm text-zinc-400">
+        <li>Configure budget in the <strong className="text-zinc-200">Pipeline Settings</strong> panel</li>
+        <li>Budget is checked after each AI Task node completes</li>
+        <li>Remaining nodes are marked as <code className="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-300">cancelled</code> when the budget is exceeded</li>
+        <li>The run is recorded with a budget-exceeded status for review</li>
+      </ul>
+
+      {/* Pre-Run Cost Estimates */}
+      <h2 className="mt-12 text-2xl font-bold" id="estimates">
+        Pre-Run Cost Estimates
+      </h2>
+      <p className="mt-3 text-zinc-400">
+        Before starting a pipeline run, AgentFlow estimates the total cost based
+        on historical per-node averages from previous executions. This helps you
+        decide whether to proceed or adjust the pipeline.
+      </p>
+
+      <InfoBox type="tip">
+        Cost estimates improve with more historical data. After 3-5 runs of the
+        same pipeline, estimates become reliable enough for budget planning.
+      </InfoBox>
+
+      {/* Loop-Aware Cost Estimation */}
+      <h2 className="mt-12 text-2xl font-bold" id="loop-cost">
+        Loop-Aware Cost Estimation
+      </h2>
+      <p className="mt-3 text-zinc-400">
+        Pre-run cost estimates account for loop iteration counts. When a loop
+        node contains AI Task children, the estimated cost is multiplied by the
+        expected number of iterations.
+      </p>
+      <ul className="mt-4 list-inside list-disc space-y-2 text-sm text-zinc-400">
+        <li>The iteration count is determined from the loop&apos;s instructions (number of items in the list)</li>
+        <li>Child AI Task costs are multiplied by the iteration count</li>
+        <li>Setting <code className="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-300">max_iterations</code> caps the estimated cost even if the list is longer</li>
+        <li>Actual costs may differ if iterations fail early or are skipped</li>
+      </ul>
+
+      {/* Per-Node Model Selection */}
+      <h2 className="mt-12 text-2xl font-bold" id="model-selection">
+        Per-Node Model Selection
+      </h2>
+      <p className="mt-3 text-zinc-400">
+        Each AI Task node can be configured to use a specific Claude model,
+        letting you optimize cost vs. capability per step:
+      </p>
+      <ul className="mt-4 list-inside list-disc space-y-2 text-sm text-zinc-400">
+        <li><strong className="text-zinc-200">Opus:</strong> Most capable, best for complex reasoning and code generation</li>
+        <li><strong className="text-zinc-200">Sonnet:</strong> Balanced performance and cost for general tasks</li>
+        <li><strong className="text-zinc-200">Haiku:</strong> Fastest and cheapest, ideal for simple classification or formatting</li>
+      </ul>
+      <p className="mt-4 text-sm text-zinc-400">
+        Set the model in the node configuration panel. If unset, the node uses
+        the pipeline-level or global default model.
+      </p>
+
+      {/* Output Caching */}
+      <h2 className="mt-12 text-2xl font-bold" id="caching">
+        Output Caching
+      </h2>
+      <p className="mt-3 text-zinc-400">
+        AgentFlow can skip re-execution of nodes whose instructions haven&apos;t
+        changed since their last successful run. This saves both time and tokens
+        during iterative pipeline development.
+      </p>
+      <ul className="mt-4 list-inside list-disc space-y-2 text-sm text-zinc-400">
+        <li>Instruction hashes (SHA-256) are compared against the most recent cached step</li>
+        <li>If the hash matches a successful prior step, the cached result is reused</li>
+        <li>Cached steps show <code className="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-300">cost_usd = 0</code> in the current run</li>
+        <li>Database indexes on <code className="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-300">run_steps</code> ensure fast cache lookups</li>
       </ul>
 
       {/* IPC Commands */}
